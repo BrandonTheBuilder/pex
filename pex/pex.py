@@ -37,6 +37,9 @@ if TYPE_CHECKING:
     _K = TypeVar("_K")
     _V = TypeVar("_V")
 
+# This env var is set by the bootstrap script
+__INSTALLED_TO__ = '__PEX_ENV_DIR__'
+
 
 class PEX(object):  # noqa: T000
     """PEX, n.
@@ -594,6 +597,20 @@ class PEX(object):  # noqa: T000
     def execute_interpreter(self):
         # type: () -> Any
         args = sys.argv[1:]
+        options = []
+        for index, arg in enumerate(args):
+            # Check if the arg is an expected startup arg
+            if arg.startswith("-") and arg not in {"-", "-c", "-m"}:
+                options.append(arg)
+                continue
+            else:
+                args = args[index:]
+                break
+
+        # The pex was called with interpreter options
+        if options:
+            return self.execute_with_options(options, args)
+
         if args:
             # NB: We take care here to setup sys.argv to match how CPython does it for each case.
             arg = args[0]
@@ -625,6 +642,16 @@ class PEX(object):  # noqa: T000
 
             code.interact()
             return None
+
+    def execute_with_options(self, options, args):
+        """
+        Restart the process passing the given options to the python interpreter
+        """
+        run_pex = os.environ.get(__INSTALLED_TO__)
+        if run_pex:
+            os.execv(sys.executable, [run_pex, *options, *args])
+        else:
+            return "{__INSTALLED_TO__} environment variable not properly set"
 
     def execute_script(self, script_name):
         # type: (str) -> Any

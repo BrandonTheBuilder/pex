@@ -57,6 +57,7 @@ import sys
 
 
 __INSTALLED_FROM__ = '__PEX_EXE__'
+__INSTALLED_TO__ = '__PEX_ENV_DIR__'
 
 
 def __re_exec__(argv0, *extra_launch_args):
@@ -70,6 +71,7 @@ def __maybe_install_pex__(pex, pex_root, pex_hash):
   installed_location = maybe_install(pex, pex_root, pex_hash)
   if not installed_location:
     return
+  os.environ[__INSTALLED_TO__] = installed_location
 
   # N.B.: This is read upon re-exec below to point sys.argv[0] back to the original pex before
   # unconditionally scrubbing the env var and handing off to user code.
